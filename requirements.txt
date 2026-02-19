@@ -1,3 +1,4 @@
+altair==6.0.0
 asttokens==3.0.1
 attrs==25.4.0
 blinker==1.9.0
@@ -48,6 +49,7 @@ pyvis==0.3.2
 referencing==0.37.0
 requests==2.32.5
 rpds-py==0.30.0
+scipy==1.17.0
 six==1.17.0
 smmap==5.0.2
 stack-data==0.6.3
@@ -59,3 +61,4 @@ traitlets==5.14.3
 typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.3
+wcwidth==0.6.0
