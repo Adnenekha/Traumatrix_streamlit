@@ -16,7 +16,7 @@ from pyvis.network import Network
 import json
 
 
-path = "/Users/akhalbous/Desktop/Traumatrix_streamlit/"
+path = "./"
 
 
 def create_dependency_graph(df: pd.DataFrame):
