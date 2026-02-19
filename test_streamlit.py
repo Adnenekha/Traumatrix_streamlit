@@ -135,7 +135,7 @@ def filter_dataframe(df: pd.DataFrame, source: str, variable_name: str):
 
 # Set header title
 
-st.set_page_config(page_title="The Ramsey Highlights", layout="wide")
+st.set_page_config(page_title="Traumabase", layout="wide")
 
 st.title("Network Graph Visualization of Traumabse variables")
 
