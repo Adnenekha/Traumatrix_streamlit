@@ -1,10 +1,9 @@
 import json
 import logging
-from functools import reduce
-from typing import Set, Tuple
-
 import numpy as np
 import pandas as pd
+import networkx as nx
+from pyvis.network import Network
 
 
 def load_data_from_path(path: str) -> pd.DataFrame:
@@ -42,7 +41,7 @@ def load_data_from_path(path: str) -> pd.DataFrame:
     else:
         logging.warning("le format de dataset est inconnu")
         return pd.DataFrame()
-    
+
 
 def process_df_dictionary(df_dict: pd.DataFrame) -> pd.DataFrame:
     """
@@ -66,3 +65,123 @@ def process_df_dictionary(df_dict: pd.DataFrame) -> pd.DataFrame:
         )
 
     return df_dict
+
+
+def filter_dataframe(df: pd.DataFrame, source: str, variable_name: str):
+    """
+    Filter dataframe based on variable name and source name.
+    Arguments:
+        df (pd.Dataframe): dataframe containing the dict
+        source (string): string defining the source name
+        variable_name (string): string defining the variable name
+
+    Returns:
+        Dataframe: dataframe with processed columns of the dictionary
+    """
+    df_source = pd.DataFrame({""})
+    list_dep = []
+    for var in df["output_name"]:
+        if (
+            df.loc[df["output_name"] == var]["parent_dependency"].isnull().values
+            == False
+        ):
+            dep = json.loads(
+                df.loc[df.output_name == var, "parent_dependency"].values[0]
+            )
+            if source in dep.keys():
+                list_dep.append(dep[source])
+            else:
+                list_dep.append(None)
+        else:
+            list_dep.append(None)
+
+    df_source = pd.DataFrame({"variable": df["output_name"], "dependency": list_dep})
+    if variable_name == None:
+        res = df_source
+    else:
+        res = df_source[
+            df_source["dependency"].apply(
+                lambda x: x is not None and variable_name in x
+            )
+        ]
+        if res.shape[0] == 0:
+            res = df_source[df_source["variable"] == variable_name]
+    return res
+
+
+def create_dependency_graph(df: pd.DataFrame):
+    """
+    Create a dependency graph from a DataFrame with variables and their dependencies.
+
+    Parameters:
+    df: DataFrame with 'variable' and 'dependency' columns
+        - 'variable': variable name
+        - 'dependency': list of parent variables, or None if no dependencies
+    variable_name: name of the variable to treat
+    """
+    G = nx.DiGraph()
+
+    # Add nodes and edges
+    for _, row in df.iterrows():
+        variable = row["variable"]
+        dependencies = row["dependency"]
+
+        # Add the variable as a node
+        G.add_node(variable)
+
+        # Handle dependencies
+        if dependencies is not None:
+            # If it's a list of dependencies
+            if isinstance(dependencies, list):
+                for dep in dependencies:
+                    if dep is not None:
+                        G.add_node(dep)
+                        G.add_edge(dep, variable)
+            # If it's a single dependency (not a list)
+            else:
+                if pd.notna(dependencies):
+                    G.add_node(dependencies)
+                    G.add_edge(dependencies, variable)
+
+    # Try hierarchical layout for better visualization of dependencies
+    try:
+        # Use graphviz layout if available (best for hierarchical graphs)
+        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
+    except:
+        try:
+            # Fall back to hierarchical spring layout
+            pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+        except:
+            # Final fallback to simple spring layout
+            pos = nx.spring_layout(G, seed=42)
+
+    # Draw edges
+    nx.draw_networkx_edges(
+        G,
+        pos,
+        arrows=True,
+        arrowsize=20,
+        arrowstyle="->",
+        width=2,
+        connectionstyle="arc3,rad=0.1",
+        alpha=0.6,
+    )
+
+    # Draw nodes
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        node_color="lightblue",
+        node_size=3000,
+        alpha=0.9,
+        linewidths=2,
+        edgecolors="darkblue",
+    )
+
+    # Draw labels
+    nx.draw_networkx_labels(G, pos, font_size=10, font_weight="bold")
+
+    # interactive
+    nt = Network(height="700px", width="100%", directed=True)
+
+    return G, nt
