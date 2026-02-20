@@ -35,7 +35,7 @@ selected_source = st.multiselect(
 
 # Select all or one variable:
 all_source = st.multiselect(
-    "Select to visualize all variables ofthe source or not",
+    "Select to visualize all variables of the source or not",
     ["Yes", "No"],
     max_selections=1,
 )
